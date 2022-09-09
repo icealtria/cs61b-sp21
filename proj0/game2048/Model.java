@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @author icealtria
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -110,17 +110,48 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
 
-        // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
-
+        board.setViewingPerspective(side);
+        boolean[][] merged = new boolean[board.size()][board.size()];
+        for (int c = 0; c < board.size(); c++) {
+            for (int r = board.size()-2; r >= 0; r--) {
+                Tile t = board.tile(c, r);
+                if (t != null){
+                    int dr = r+1;
+                    while (dr <= 3) {
+                        Tile dt = board.tile(c, dr);
+                        if (dt != null) {
+                            // 如果不应该移动到(dc,dr)，dr回退一格
+                            if (merged[c][dr] || dt.value() != t.value()) {
+                                dr--;
+                            }
+                            break;
+                        }
+                        if (dr == 3) {
+                            break;
+                        }
+                        dr++;
+                    }
+                    // 如果发生了移动，设置changed
+                    if (dr != r) {
+                        changed = true;
+                    }
+                    // 如果发生了merge
+                    if (board.move(c, dr, t)) {
+                        merged[c][dr] = true;
+                        score += board.tile(c, dr).value();
+                    }
+                }
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
     }
-
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
@@ -137,7 +168,13 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (b.tile(i,j) == null) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +184,13 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        for (int i = 0; i < b.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                if (b.tile(i,j) != null && MAX_PIECE == b.tile(i, j).value()) {
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,8 +201,21 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
-        return false;
+        if (!emptySpaceExists(b)){
+            for (int i = 0; i < b.size(); i++) {
+                for (int j = 0; j < b.size()-1; j++) {
+                    if (b.tile(i,j).value() == b.tile(i,j+1).value()){
+                        return true;
+                    }
+                    if (b.tile(j,i).value() == b.tile(j+1,i).value()){
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 
 
